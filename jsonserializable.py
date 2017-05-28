@@ -155,28 +155,16 @@ class Array(list, ContainerBase):
         return cls(deserialize(entry, cls._container_type) for entry in data)
 
 
-class Mapping(_MutableMapping, ContainerBase):
+class Mapping(dict, ContainerBase):
 
     def __init__(self, *args, **kwargs):
-        self._contents = dict(*args, **kwargs)
-        for value in self._contents.values():
+        super().__init__(*args, **kwargs)
+        for value in self.values():
             self._check_type(value)
-
-    def __len__(self):
-        return len(self._contents)
-
-    def __iter__(self):
-        return iter(self._contents)
 
     def __setitem__(self, key, value):
         self._check_type(value)
-        self._contents[key] = value
-
-    def __getitem__(self, key):
-        return self._contents[key]
-
-    def __delitem__(self, key):
-        del self._contents[key]
+        super().__setitem__(key, value)
 
     @classmethod
     def schema(cls):
