@@ -28,7 +28,7 @@ def test_invalid_type(data):
         Array[int](data)
 
 
-@pytest.mark.parametrize('data', [['foo'], [1, 2, 'bar']])
+@pytest.mark.parametrize('data', [['foo'], [1, 2, 'bar'], {}, 1])
 def test_invalid_schema(data):
     with pytest.raises(ValidationError):
         Array[int].deserialize(data)
