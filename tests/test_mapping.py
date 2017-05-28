@@ -4,13 +4,13 @@ from jsonserializable import Mapping
 
 
 @pytest.mark.parametrize('data', [{}, {'one': 1, 'two': 2}])
-def test_serialize_mapping(data):
+def test_serialize(data):
     mapping = Mapping[int](data)
     assert mapping.serialize() == data
 
 
 @pytest.mark.parametrize('data', [{}, {'one': 1, 'two': 2}])
-def test_deserialize_mapping(data):
+def test_deserialize(data):
     mapping = Mapping[int].deserialize(data)
     assert mapping == Mapping[int](data)
 
