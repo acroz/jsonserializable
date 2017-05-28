@@ -134,6 +134,9 @@ class Array(list, ContainerBase):
         for item in self:
             self._check_type(item)
 
+    def __repr__(self):
+        return '{}({})'.format(repr(self.__class__), super().__repr__())
+
     def __setitem__(self, index, value):
         self._check_type(value)
         super().__setitem__(index, value)
@@ -170,6 +173,9 @@ class Mapping(dict, ContainerBase):
         for key, value in self.items():
             self._check_key_type(key)
             self._check_type(value)
+
+    def __repr__(self):
+        return '{}({})'.format(repr(self.__class__), super().__repr__())
 
     def __setitem__(self, key, value):
         self._check_key_type(key)
