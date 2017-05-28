@@ -124,29 +124,20 @@ class ContainerBase(Serializable, metaclass=ContainerMeta):
             ))
 
 
-class Array(_MutableSequence, ContainerBase):
+class Array(list, ContainerBase):
 
     def __init__(self, *args, **kwargs):
-        self._contents = list(*args, **kwargs)
-        for item in self._contents:
+        super().__init__(*args, **kwargs)
+        for item in self:
             self._check_type(item)
-
-    def __len__(self):
-        return len(self._contents)
 
     def __setitem__(self, index, value):
         self._check_type(value)
-        self._contents[index] = value
-
-    def __getitem__(self, index):
-        return self._contents[index]
-
-    def __delitem__(self, index):
-        del self._contents[index]
+        super().__setitem__(index, value)
 
     def insert(self, index, value):
         self._check_type(value)
-        self._contents.insert(index, value)
+        super().insert(index, value)
 
     @classmethod
     def schema(cls):
