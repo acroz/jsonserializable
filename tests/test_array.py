@@ -32,3 +32,9 @@ def test_construct_invalid_type(data):
 def test_deserialize_invalid_schema(data):
     with pytest.raises(ValidationError):
         Array[int].deserialize(data)
+
+
+def test_setitem_invalid_type():
+    array = Array[int]([1, 2, 3])
+    with pytest.raises(TypeError):
+        array[1] = 'foo'
