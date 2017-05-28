@@ -68,6 +68,93 @@ def deserialize(python_type: ABCMeta, data):
         return python_type.deserialize(data)  # type: ignore
 
 
+class ArrayMeta(ABCMeta):
+
+    def __new__(metacls, name, bases, classdict,
+                array_type=Serializable):
+        assert isinstance(array_type, type)
+        assert issubclass(array_type, SerializableBase)
+        cls = super().__new__(metacls, name, bases, classdict)
+        cls._array_type = array_type
+        return cls
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getitem__(self, array_type):
+        return self.__class__(self.__name__,
+                              (self,) + self.__bases__,
+                              dict(self.__dict__),
+                              array_type=array_type)
+
+    def __repr__(self):
+        return '{}[{}]'.format(
+            self.__name__, repr(self._array_type)
+        )
+
+    def __instancecheck__(self, instance):
+        if not super().__instancecheck__(instance):
+            return False
+        for item in instance:
+            if not isinstance(item, self._array_type):
+                return False
+        return True
+
+    def __subclasscheck__(self, cls):
+        if not super().__subclasscheck__(cls):
+            return False
+        if not issubclass(cls._array_type,
+                          self._array_type):
+            return False
+        return True
+
+
+class Array(MutableSequence, Serializable, metaclass=ArrayMeta):
+
+    def _check_type(self, item):
+        if not isinstance(item, self._array_type):
+            raise TypeError('array entries must be of type {}'.format(
+                self._array_type
+            ))
+
+    def __init__(self, contents, *args, **kwargs):
+        for item in contents:
+            self._check_type(item)
+        self._contents = contents
+
+    def __len__(self):
+        return len(self._contents)
+
+    def __setitem__(self, index, value):
+        self._check_type(value)
+        self._contents[index] = value
+
+    def __getitem__(self, index):
+        return self._contents[index]
+
+    def __delitem__(self, index):
+        del self._contents[index]
+
+    def insert(self, index, value):
+        self._check_type(value)
+        self._contents.insert(index, value)
+
+    @classmethod
+    def schema(cls):
+        return {
+            'type': 'array',
+            'items': schema(cls._array_type)
+        }
+
+    def serialize(self):
+        return [serialize(item) for item in self]
+
+    @classmethod
+    def deserialize(cls, data: Sequence):
+        jsonschema.validate(data, cls.schema())
+        return cls(deserialize(entry, cls._array_type) for entry in data)
+
+
 class Attribute:
 
     def __init__(self, type, optional=False):
@@ -191,90 +278,3 @@ class Object(Serializable, metaclass=ObjectMeta):
             jsattr = cls._object_attributes[name]
             kwargs[name] = deserialize(jsattr.type, value)
         return cls(**kwargs)
-
-
-class ArrayMeta(ABCMeta):
-
-    def __new__(metacls, name, bases, classdict,
-                array_type=Serializable):
-        assert isinstance(array_type, type)
-        assert issubclass(array_type, SerializableBase)
-        cls = super().__new__(metacls, name, bases, classdict)
-        cls._array_type = array_type
-        return cls
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __getitem__(self, array_type):
-        return self.__class__(self.__name__,
-                              (self,) + self.__bases__,
-                              dict(self.__dict__),
-                              array_type=array_type)
-
-    def __repr__(self):
-        return '{}[{}]'.format(
-            self.__name__, repr(self._array_type)
-        )
-
-    def __instancecheck__(self, instance):
-        if not super().__instancecheck__(instance):
-            return False
-        for item in instance:
-            if not isinstance(item, self._array_type):
-                return False
-        return True
-
-    def __subclasscheck__(self, cls):
-        if not super().__subclasscheck__(cls):
-            return False
-        if not issubclass(cls._array_type,
-                          self._array_type):
-            return False
-        return True
-
-
-class Array(MutableSequence, Serializable, metaclass=ArrayMeta):
-
-    def _check_type(self, item):
-        if not isinstance(item, self._array_type):
-            raise TypeError('array entries must be of type {}'.format(
-                self._array_type
-            ))
-
-    def __init__(self, contents, *args, **kwargs):
-        for item in contents:
-            self._check_type(item)
-        self._contents = contents
-
-    def __len__(self):
-        return len(self._contents)
-
-    def __setitem__(self, index, value):
-        self._check_type(value)
-        self._contents[index] = value
-
-    def __getitem__(self, index):
-        return self._contents[index]
-
-    def __delitem__(self, index):
-        del self._contents[index]
-
-    def insert(self, index, value):
-        self._check_type(value)
-        self._contents.insert(index, value)
-
-    @classmethod
-    def schema(cls):
-        return {
-            'type': 'array',
-            'items': schema(cls._array_type)
-        }
-
-    def serialize(self):
-        return [serialize(item) for item in self]
-
-    @classmethod
-    def deserialize(cls, data: Sequence):
-        jsonschema.validate(data, cls.schema())
-        return cls(deserialize(entry, cls._array_type) for entry in data)
