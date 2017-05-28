@@ -23,3 +23,9 @@ def test_deserialize_simple(value, target_type):
     deserialized = deserialize(value, target_type)
     assert deserialized == value
     assert type(deserialized) == target_type
+
+
+@pytest.mark.parametrize('value', [b'bar', list()])
+def test_serialize_unsupported(value):
+    with pytest.raises(TypeError):
+        serialize(value)
