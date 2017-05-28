@@ -80,7 +80,7 @@ def _check_serializable_type(python_type):
 class ContainerMeta(ABCMeta):
 
     def __new__(metacls, name, bases, classdict,
-                container_type=Serializable):
+                container_type=SerializableBase):
         _check_serializable_type(container_type)
         cls = super().__new__(metacls, name, bases, classdict)
         cls._container_type = container_type
