@@ -46,3 +46,15 @@ def test_deserialize_invalid_schema(data):
 def test_deserialize_invalid_key_type():
     with pytest.raises(TypeError):
         Mapping[int].deserialize({1: 1})
+
+
+def test_setitem_invalid_key_type():
+    mapping = Mapping[int]()
+    with pytest.raises(TypeError):
+        mapping[1] = 1
+
+
+def test_setitem_invalid_value_type():
+    mapping = Mapping[int]()
+    with pytest.raises(TypeError):
+        mapping['foo'] = 'bar'
