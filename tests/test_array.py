@@ -38,3 +38,9 @@ def test_setitem_invalid_type():
     array = Array[int]([1, 2, 3])
     with pytest.raises(TypeError):
         array[1] = 'foo'
+
+
+def test_insert_invalid_type():
+    array = Array[int]([1, 2, 3])
+    with pytest.raises(TypeError):
+        array.insert(1, 'foo')
