@@ -278,6 +278,14 @@ class Object(Serializable, metaclass=ObjectMeta):
         classname = self.__class__.__name__
         return '{}({})'.format(classname, ', '.join(parts))
 
+    def __eq__(self, other):
+        if type(self) != type(other):
+            return False
+        for name in self._object_attributes:
+            if getattr(self, name) != getattr(other, name):
+                return False
+        return True
+
     @classmethod
     def schema(cls):
         properties = {}
