@@ -74,8 +74,12 @@ class ContainerMeta(ABCMeta):
 
     def __new__(metacls, name, bases, classdict,
                 container_type=Serializable):
-        assert isinstance(container_type, type)
-        assert issubclass(container_type, SerializableBase)
+        if not isinstance(container_type, type):
+            raise TypeError('{} is not a type'.format(container_type))
+        if not issubclass(container_type, SerializableBase):
+            raise TypeError(
+                '{} is not a supported type'.format(container_type)
+            )
         cls = super().__new__(metacls, name, bases, classdict)
         cls._container_type = container_type
         return cls
