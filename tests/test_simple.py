@@ -1,7 +1,5 @@
 import pytest
-from jsonserializable import (
-    serialize, deserialize
-)
+from jsonserializable import serialize, deserialize
 
 
 @pytest.mark.parametrize('value', [2, 3.4, 'foo', True])
