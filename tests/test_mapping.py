@@ -48,13 +48,15 @@ def test_deserialize_invalid_key_type():
         Mapping[int].deserialize({1: 1})
 
 
-def test_setitem_invalid_key_type():
+@pytest.mark.parametrize('key', [1, ['foo']])
+def test_setitem_invalid_key_type(key):
     mapping = Mapping[int]()
     with pytest.raises(TypeError):
-        mapping[1] = 1
+        mapping[key] = 1
 
 
-def test_setitem_invalid_value_type():
+@pytest.mark.parametrize('value', ['bar', [1]])
+def test_setitem_invalid_value_type(value):
     mapping = Mapping[int]()
     with pytest.raises(TypeError):
-        mapping['foo'] = 'bar'
+        mapping['foo'] = value
