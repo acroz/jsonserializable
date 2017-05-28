@@ -34,11 +34,25 @@ def test_deserialize_invalid_schema(data):
         Array[int].deserialize(data)
 
 
+def test_setitem():
+    array = Array[int]([1, 2, 3])
+    array[1] = 10
+    assert array[1] == 10
+    assert len(array) == 3
+
+
 @pytest.mark.parametrize('data', ['foo', [], [1]])
 def test_setitem_invalid_type(data):
     array = Array[int]([1, 2, 3])
     with pytest.raises(TypeError):
         array[1] = data
+
+
+def test_insert():
+    array = Array[int]([1, 2, 3])
+    array.insert(1, 10)
+    assert array[1] == 10
+    assert len(array) == 4
 
 
 @pytest.mark.parametrize('data', ['foo', [], [1]])
