@@ -200,7 +200,7 @@ class Attribute:
     def __init__(self, type, optional=False):
         _check_serializable_type(type)
         self.type = type
-        self.optional = optional
+        self.optional = bool(optional)
 
     def __repr__(self):
         return 'Attribute(type={}, optional={})'.format(
