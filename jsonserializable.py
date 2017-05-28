@@ -154,12 +154,19 @@ class Array(list, ContainerBase):
 
 class Mapping(dict, ContainerBase):
 
+    @staticmethod
+    def _check_key_type(key):
+        if not isinstance(key, str):
+            raise TypeError('keys must be of type str')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for value in self.values():
+        for key, value in self.items():
+            self._check_key_type(key)
             self._check_type(value)
 
     def __setitem__(self, key, value):
+        self._check_key_type(key)
         self._check_type(value)
         super().__setitem__(key, value)
 
