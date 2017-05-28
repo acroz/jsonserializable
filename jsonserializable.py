@@ -1,5 +1,8 @@
-from collections import OrderedDict
-from collections.abc import Sequence, MutableSequence
+from collections import OrderedDict as _OrderedDict
+from collections.abc import (
+    Sequence as _Sequence, MutableSequence as _MutableSequence,
+    Mapping as _Mapping, MutableMapping as _MutableMapping
+)
 from abc import ABCMeta, abstractmethod
 
 import jsonschema
@@ -68,59 +71,63 @@ def deserialize(python_type: ABCMeta, data):
         return python_type.deserialize(data)  # type: ignore
 
 
-class ArrayMeta(ABCMeta):
+class ContainerMeta(ABCMeta):
 
     def __new__(metacls, name, bases, classdict,
-                array_type=Serializable):
-        assert isinstance(array_type, type)
-        assert issubclass(array_type, SerializableBase)
+                container_type=Serializable):
+        assert isinstance(container_type, type)
+        assert issubclass(container_type, SerializableBase)
         cls = super().__new__(metacls, name, bases, classdict)
-        cls._array_type = array_type
+        cls._container_type = container_type
         return cls
 
     def __init__(self, *args, **kwargs):
         pass
 
-    def __getitem__(self, array_type):
+    def __getitem__(self, container_type):
         return self.__class__(self.__name__,
                               (self,) + self.__bases__,
                               dict(self.__dict__),
-                              array_type=array_type)
+                              container_type=container_type)
 
     def __repr__(self):
         return '{}[{}]'.format(
-            self.__name__, repr(self._array_type)
+            self.__name__, repr(self._container_type)
         )
 
     def __instancecheck__(self, instance):
         if not super().__instancecheck__(instance):
             return False
         for item in instance:
-            if not isinstance(item, self._array_type):
+            if not isinstance(item, self._container_type):
                 return False
         return True
 
     def __subclasscheck__(self, cls):
         if not super().__subclasscheck__(cls):
             return False
-        if not issubclass(cls._array_type,
-                          self._array_type):
+        if not issubclass(cls._container_type,
+                          self._container_type):
             return False
         return True
 
 
-class Array(MutableSequence, Serializable, metaclass=ArrayMeta):
+class ContainerBase(Serializable, metaclass=ContainerMeta):
 
-    def _check_type(self, item):
-        if not isinstance(item, self._array_type):
-            raise TypeError('array entries must be of type {}'.format(
-                self._array_type
+    @classmethod
+    def _check_type(cls, item):
+        if not isinstance(item, cls._container_type):
+            raise TypeError('entries must be of type {}'.format(
+                cls._container_type
             ))
 
-    def __init__(self, contents, *args, **kwargs):
-        for item in contents:
+
+class Array(_MutableSequence, ContainerBase):
+
+    def __init__(self, *args, **kwargs):
+        self._contents = list(*args, **kwargs)
+        for item in self._contents:
             self._check_type(item)
-        self._contents = contents
 
     def __len__(self):
         return len(self._contents)
@@ -143,16 +150,58 @@ class Array(MutableSequence, Serializable, metaclass=ArrayMeta):
     def schema(cls):
         return {
             'type': 'array',
-            'items': schema(cls._array_type)
+            'items': schema(cls._container_type)
         }
 
     def serialize(self):
         return [serialize(item) for item in self]
 
     @classmethod
-    def deserialize(cls, data: Sequence):
+    def deserialize(cls, data: _Sequence):
         jsonschema.validate(data, cls.schema())
-        return cls(deserialize(entry, cls._array_type) for entry in data)
+        return cls(deserialize(entry, cls._container_type) for entry in data)
+
+
+class Mapping(_MutableMapping, ContainerBase):
+
+    def __init__(self, *args, **kwargs):
+        self._contents = dict(*args, **kwargs)
+        for value in self._contents.values():
+            self._check_type(value)
+
+    def __len__(self):
+        return len(self._contents)
+
+    def __iter__(self):
+        return iter(self._contents)
+
+    def __setitem__(self, key, value):
+        self._check_type(value)
+        self._contents[key] = value
+
+    def __getitem__(self, key):
+        return self._contents[key]
+
+    def __delitem__(self, key):
+        del self._contents[key]
+
+    @classmethod
+    def schema(cls):
+        return {
+            'type': 'object',
+            'additionalProperties': schema(cls._container_type)
+        }
+
+    def serialize(self):
+        return {key: serialize(value) for key, value in self.items()}
+
+    @classmethod
+    def deserialize(cls, data: _Mapping):
+        jsonschema.validate(data, cls.schema())
+        return cls({
+            key: deserialize(value, cls._container_type)
+            for key, value in data.items()
+        })
 
 
 class Attribute:
@@ -172,7 +221,7 @@ class ObjectDict(dict):
 
     def __init__(self):
         super().__init__()
-        self.attributes = OrderedDict()
+        self.attributes = _OrderedDict()
 
     def __setitem__(self, key, value):
         if isinstance(value, Attribute):
@@ -189,7 +238,7 @@ class ObjectMeta(ABCMeta):
     def __new__(metacls, name, bases, classdict):
         cls = super().__new__(metacls, name, bases, classdict)
 
-        attributes = OrderedDict()
+        attributes = _OrderedDict()
         attributes.update(getattr(cls, '_object_attributes', {}))
         attributes.update(classdict.attributes)
         cls._object_attributes = attributes
