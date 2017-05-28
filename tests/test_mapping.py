@@ -28,7 +28,12 @@ def test_invalid_type(data):
         Mapping[int](data)
 
 
-@pytest.mark.parametrize('data', [{'one': 'foo'}, {'one': 1, 'two': 'bar'}])
+@pytest.mark.parametrize('data', [
+    {'one': 'foo'},
+    {'one': 1, 'two': 'bar'},
+    [],
+    1
+])
 def test_invalid_schema(data):
     with pytest.raises(ValidationError):
         Mapping[int].deserialize(data)
