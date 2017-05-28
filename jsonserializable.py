@@ -70,16 +70,18 @@ def deserialize(data, python_type: ABCMeta):
         raise TypeError('cannot deserialize to this type')
 
 
+def _check_serializable_type(python_type):
+    if not isinstance(python_type, type):
+        raise TypeError('{} is not a type'.format(python_type))
+    if not issubclass(python_type, SerializableBase):
+        raise TypeError('{} is not a supported type'.format(python_type))
+
+
 class ContainerMeta(ABCMeta):
 
     def __new__(metacls, name, bases, classdict,
                 container_type=Serializable):
-        if not isinstance(container_type, type):
-            raise TypeError('{} is not a type'.format(container_type))
-        if not issubclass(container_type, SerializableBase):
-            raise TypeError(
-                '{} is not a supported type'.format(container_type)
-            )
+        _check_serializable_type(container_type)
         cls = super().__new__(metacls, name, bases, classdict)
         cls._container_type = container_type
         return cls
@@ -196,7 +198,7 @@ class Mapping(dict, ContainerBase):
 class Attribute:
 
     def __init__(self, type, optional=False):
-        assert issubclass(type, SerializableBase)
+        _check_serializable_type(type)
         self.type = type
         self.optional = optional
 
