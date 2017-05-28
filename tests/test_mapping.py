@@ -48,6 +48,12 @@ def test_deserialize_invalid_key_type():
         Mapping[int].deserialize({1: 1})
 
 
+def test_setitem():
+    mapping = Mapping[int]()
+    mapping['foo'] = 1
+    assert mapping['foo'] == 1
+
+
 @pytest.mark.parametrize('key', [1, ['foo']])
 def test_setitem_invalid_key_type(key):
     mapping = Mapping[int]()
