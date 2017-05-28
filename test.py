@@ -25,7 +25,11 @@ def test_deserialize_simple(value, target_type):
     assert type(deserialized) == target_type
 
 
-@pytest.mark.parametrize('value', [b'bar', list()])
-def test_serialize_unsupported(value):
+def test_serialize_unsupported():
     with pytest.raises(TypeError):
-        serialize(value)
+        serialize(b'foo')
+
+
+def test_deserialize_unsupported():
+    with pytest.raises(TypeError):
+        deserialize(b'foo', bytes)

@@ -64,11 +64,13 @@ def serialize(obj: SerializableBase):
         raise TypeError('object is not serializable')
 
 
-def deserialize(python_type: ABCMeta, data):
-    if python_type in JSON_SCHEMA_TYPES:
+def deserialize(data, python_type: ABCMeta):
+    if issubclass(python_type, Serializable):
+        return python_type.deserialize(data)  # type: ignore
+    elif issubclass(python_type, SimpleType):
         return python_type(data)
     else:
-        return python_type.deserialize(data)  # type: ignore
+        raise TypeError('cannot deserialize to this type')
 
 
 class ContainerMeta(ABCMeta):
@@ -325,5 +327,5 @@ class Object(Serializable, metaclass=ObjectMeta):
         kwargs = {}
         for name, value in data.items():
             jsattr = cls._object_attributes[name]
-            kwargs[name] = deserialize(jsattr.type, value)
+            kwargs[name] = deserialize(value, jsattr.type)
         return cls(**kwargs)
