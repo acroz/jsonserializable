@@ -1,8 +1,5 @@
 from collections import OrderedDict as _OrderedDict
-from collections.abc import (
-    Sequence as _Sequence, MutableSequence as _MutableSequence,
-    Mapping as _Mapping, MutableMapping as _MutableMapping
-)
+from collections.abc import Sequence as _Sequence, Mapping as _Mapping
 from abc import ABCMeta, abstractmethod
 
 import jsonschema
