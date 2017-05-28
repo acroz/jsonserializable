@@ -16,6 +16,11 @@ def test_serialize(value, expected):
     assert serialized == expected
 
 
+def test_serialize_unsupported():
+    with pytest.raises(TypeError):
+        serialize(b'foo')
+
+
 @pytest.mark.parametrize('value, target_type, expected', [
     (2, int, 2),
     (3.4, float, 3.4),
@@ -30,6 +35,11 @@ def test_deserialize(value, target_type, expected):
     assert deserialized == expected
 
 
+def test_deserialize_unsupported():
+    with pytest.raises(TypeError):
+        deserialize(b'foo', bytes)
+
+
 @pytest.mark.parametrize('python_type, expected', [
     (int, {'type': 'number'}),
     (float, {'type': 'number'}),
@@ -42,11 +52,6 @@ def test_schema(python_type, expected):
     assert schema(python_type) == expected
 
 
-def test_serialize_unsupported():
+def test_schema_unsupported():
     with pytest.raises(TypeError):
-        serialize(b'foo')
-
-
-def test_deserialize_unsupported():
-    with pytest.raises(TypeError):
-        deserialize(b'foo', bytes)
+        schema(bytes)
