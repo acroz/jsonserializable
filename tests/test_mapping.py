@@ -23,9 +23,14 @@ def test_schema():
 
 
 @pytest.mark.parametrize('data', [{'one': 'foo'}, {'one': 1, 'two': 'bar'}])
-def test_invalid_type(data):
+def test_construct_invalid_type(data):
     with pytest.raises(TypeError):
         Mapping[int](data)
+
+
+def test_construct_invalid_key_type():
+    with pytest.raises(TypeError):
+        Mapping[int]({1: 1})
 
 
 @pytest.mark.parametrize('data', [
