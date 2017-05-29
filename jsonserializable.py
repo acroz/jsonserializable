@@ -130,7 +130,7 @@ class ContainerBase(Serializable, metaclass=ContainerMeta):
             ))
 
 
-class Array(ContainerBase, list):
+class List(ContainerBase, list):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -161,7 +161,7 @@ class Array(ContainerBase, list):
         return cls(deserialize(entry, cls._container_type) for entry in data)
 
 
-class Mapping(ContainerBase, dict):
+class Dict(ContainerBase, dict):
 
     @staticmethod
     def _check_key_type(key):
