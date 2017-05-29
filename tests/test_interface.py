@@ -1,5 +1,5 @@
 import pytest
-from jsonserializable import serialize, deserialize, schema, List, Mapping
+from jsonserializable import serialize, deserialize, schema, List, Dict
 
 
 @pytest.mark.parametrize('value, expected', [
@@ -8,7 +8,7 @@ from jsonserializable import serialize, deserialize, schema, List, Mapping
     ('foo', 'foo'),
     (True, True),
     (List[int]([1, 2]), [1, 2]),
-    (Mapping[int](foo=1), {'foo': 1})
+    (Dict[int](foo=1), {'foo': 1})
 ])
 def test_serialize(value, expected):
     serialized = serialize(value)
@@ -27,7 +27,7 @@ def test_serialize_unsupported():
     ('foo', str, 'foo'),
     (True, bool, True),
     ([1, 2], List[int], List[int]([1, 2])),
-    ({'foo': 1}, Mapping[int], Mapping[int](foo=1))
+    ({'foo': 1}, Dict[int], Dict[int](foo=1))
 ])
 def test_deserialize(value, target_type, expected):
     deserialized = deserialize(value, target_type)
@@ -46,7 +46,7 @@ def test_deserialize_unsupported():
     (str, {'type': 'string'}),
     (bool, {'type': 'boolean'}),
     (List[int], List[int].schema()),
-    (Mapping[int], Mapping[int].schema())
+    (Dict[int], Dict[int].schema())
 ])
 def test_schema(python_type, expected):
     assert schema(python_type) == expected
