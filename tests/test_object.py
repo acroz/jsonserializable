@@ -106,6 +106,13 @@ def test_setattr_invalid_type(value):
         obj.string = value
 
 
+@pytest.mark.parametrize('value', [1, ['bar']])
+def test_setattr_optional_invalid_type(value):
+    obj = ExampleObject(integer=1, string='foo')
+    with pytest.raises(TypeError):
+        obj.optional = value
+
+
 def test_setattr_nonexistent_attribute():
     obj = ExampleObject(integer=1, string='foo')
     with pytest.raises(AttributeError):
