@@ -79,45 +79,44 @@ def _check_serializable_type(python_type):
 
 class ContainerMeta(ABCMeta):
 
-    def __new__(metacls, name, bases, classdict,
-                container_type=SerializableBase):
-        _check_serializable_type(container_type)
+    def __new__(metacls, name, bases, classdict, container_type=None):
+        if container_type is not None:
+            _check_serializable_type(container_type)
         cls = super().__new__(metacls, name, bases, classdict)
-        cls._container_type = container_type
+        cls._subclass_cache = {}
+        cls._container_type = (container_type or
+                               getattr(cls, '_container_type', None))
         return cls
 
     def __init__(self, *args, **kwargs):
         pass
 
     def __getitem__(self, container_type):
-        return self.__class__(self.__name__,
-                              (self,) + self.__bases__,
-                              dict(self.__dict__),
-                              container_type=container_type)
-
-    def __repr__(self):
-        return '{}[{}]'.format(
-            self.__name__, repr(self._container_type)
-        )
-
-    def __instancecheck__(self, instance):
-        if not super().__instancecheck__(instance):
-            return False
-        for item in instance:
-            if not isinstance(item, self._container_type):
-                return False
-        return True
-
-    def __subclasscheck__(self, cls):
-        if not super().__subclasscheck__(cls):
-            return False
-        if not issubclass(cls._container_type,
-                          self._container_type):
-            return False
-        return True
+        if self._container_type is not None:
+            raise TypeError(
+                'container type already set as {}'.format(self._container_type)
+            )
+        try:
+            cls = self._subclass_cache[container_type]
+        except KeyError:
+            name = '{}[{}]'.format(self.__name__, repr(container_type))
+            cls = self.__class__(
+                name, (self,) + self.__bases__, dict(self.__dict__),
+                container_type=container_type
+            )
+            self._subclass_cache[container_type] = cls
+        return cls
 
 
 class ContainerBase(Serializable, metaclass=ContainerMeta):
+
+    def __init__(self, *args, **kwargs):
+        if self._container_type is None:
+            raise TypeError(
+                'container {} has no inner type - use square brackets to set'
+                .format(self.__class__.__name__)
+            )
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def _check_type(cls, item):
@@ -127,7 +126,7 @@ class ContainerBase(Serializable, metaclass=ContainerMeta):
             ))
 
 
-class Array(list, ContainerBase):
+class Array(ContainerBase, list):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -161,7 +160,7 @@ class Array(list, ContainerBase):
         return cls(deserialize(entry, cls._container_type) for entry in data)
 
 
-class Mapping(dict, ContainerBase):
+class Mapping(ContainerBase, dict):
 
     @staticmethod
     def _check_key_type(key):
