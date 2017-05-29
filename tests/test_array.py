@@ -67,9 +67,10 @@ def test_no_type_argument():
         Array()
 
 
-def test_unsupported_type_argument():
+@pytest.mark.parametrize('typearg', [bytes, 'foo'])
+def test_unsupported_type_argument(typearg):
     with pytest.raises(TypeError):
-        Array[bytes]
+        Array[typearg]
 
 
 def test_second_type_argument():

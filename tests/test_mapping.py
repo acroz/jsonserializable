@@ -73,9 +73,10 @@ def test_no_type_argument():
         Mapping()
 
 
-def test_unsupported_type_argument():
+@pytest.mark.parametrize('typearg', [bytes, 'foo'])
+def test_unsupported_type_argument(typearg):
     with pytest.raises(TypeError):
-        Mapping[bytes]
+        Mapping[typearg]
 
 
 def test_second_type_argument():
