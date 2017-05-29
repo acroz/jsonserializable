@@ -198,6 +198,136 @@ class Dict(ContainerBase, dict):
         })
 
 
+def _is_descriptor(obj):
+    """Returns True if obj is a descriptor, False otherwise."""
+    return (hasattr(obj, '__get__') or
+            hasattr(obj, '__set__') or
+            hasattr(obj, '__delete__'))
+
+
+class EnumDict(dict):
+
+    def __init__(self):
+        super().__init__()
+        self.members = _OrderedDict()
+
+    def __setitem__(self, key, value):
+        if not key.startswith('_') and not _is_descriptor(value):
+            if key in self:
+                raise TypeError(
+                    '{} already defined as: {}'.format(key, self[key])
+                )
+            self.members[key] = value
+        else:
+            super().__setitem__(key, value)
+
+
+class EnumMember(Serializable):
+
+    def __init__(self, enum, name, value):
+        self._enum = enum
+        self.name = name
+        self.value = value
+
+    def __repr__(self):
+        return '{}.{}'.format(self._enum.__name__, self.name)
+
+    def __eq__(self, other):
+        return (isinstance(other, EnumMember) and
+                self._enum == other._enum and
+                self.name == other.name and
+                self.value == other.value)
+
+    def schema(self):
+        return self._enum.schema()
+
+    def serialize(self):
+        return serialize(self.value)
+
+    def deserialize(self, data):
+        return self._enum.deserialize(data)
+
+
+class EnumMeta(ABCMeta):
+
+    @classmethod
+    def __prepare__(metacls, name, bases, **kwargs):
+        return EnumDict()
+
+    def __new__(metacls, name, bases, classdict):
+        cls = super().__new__(metacls, name, bases, classdict)
+
+        member_defs = _OrderedDict()
+        member_defs.update(getattr(cls, '_member_definitions', {}))
+        member_defs.update(classdict.members)
+        cls._member_definitions = member_defs
+
+        name_map = _OrderedDict()
+        value_map = _OrderedDict()
+        for name, value in member_defs.items():
+            member = EnumMember(cls, name, value)
+            name_map[name] = member
+            try:
+                if value in value_map:
+                    raise ValueError('enumeration values must be unique')
+                value_map[value] = member
+            except TypeError:
+                # Unhashable value, skip
+                pass
+        cls._name_map = name_map
+        cls._value_map = value_map
+
+        return cls
+
+    def __iter__(cls):
+        return iter(cls._name_map.values())
+
+    def __len__(cls):
+        return len(cls._name_map)
+
+    def __getitem__(self, name):
+        return self._name_map[name]
+
+    def __getattr__(self, name):
+        if name.startswith('_'):
+            return super().__getattr__(name)
+        try:
+            return self._name_map[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+    def __call__(self, value):
+        return self.from_value(value)
+
+    def from_value(self, value):
+        try:
+            return self._value_map[value]
+        except TypeError:
+            # Unhashable value
+            for member in self._name_map.values():
+                if member.value == value:
+                    return member
+            else:
+                raise ValueError('no matching value')
+        except KeyError:
+            raise ValueError('no matching value')
+
+
+class Enum(Serializable, metaclass=EnumMeta):
+
+    @classmethod
+    def schema(cls):
+        return {'enum': [serialize(member) for member in cls]}
+
+    def serialize(self):
+        raise TypeError('cannot serialize an enum, only its members')
+
+    @classmethod
+    def deserialize(cls, data):
+        jsonschema.validate(data, cls.schema())
+        return cls.from_value(data)
+
+
 class Attribute:
 
     def __init__(self, type, optional=False):
