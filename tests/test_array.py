@@ -62,6 +62,11 @@ def test_insert_invalid_type(data):
         array.insert(1, data)
 
 
+def test_no_type_argument():
+    with pytest.raises(TypeError):
+        Array()
+
+
 def test_unsupported_type_argument():
     with pytest.raises(TypeError):
         Array[bytes]

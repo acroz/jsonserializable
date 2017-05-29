@@ -68,6 +68,11 @@ def test_setitem_invalid_value_type(value):
         mapping['foo'] = value
 
 
+def test_no_type_argument():
+    with pytest.raises(TypeError):
+        Mapping()
+
+
 def test_unsupported_type_argument():
     with pytest.raises(TypeError):
         Mapping[bytes]
