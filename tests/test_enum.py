@@ -63,6 +63,10 @@ def test_fromvalue_missing_unhashable():
         ExampleEnum.from_value(List[str](['foo', 'bar']))
 
 
+def test_len():
+    assert len(ExampleEnum) == 3
+
+
 def test_repr_member():
     assert repr(ExampleEnum.foo) == 'ExampleEnum.foo'
 
