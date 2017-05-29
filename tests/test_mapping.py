@@ -49,8 +49,7 @@ def test_deserialize_invalid_key_type():
 
 
 def test_repr():
-    obj = Mapping[int](one=1, two=2)
-    assert repr(obj) == "Mapping[int]({'one': 1, 'two': 2})"
+    assert repr(Mapping[int](one=1)) == "Mapping[int]({'one': 1})"
 
 
 def test_setitem():
