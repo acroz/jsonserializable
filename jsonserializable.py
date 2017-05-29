@@ -5,8 +5,9 @@ from uuid import UUID
 
 import jsonschema
 
-UUID_PATTERN = ("^[0-9a-f]{8}-?[0-9a-f]{4}-?[1-5][0-9a-f]{3}-?"
-                "[89ab][0-9a-f]{3}-?[0-9a-f]{12}$")
+UUID_PATTERN = ("^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[1-5][0-9a-fA-F]{3}-?"
+                "[89abAB][0-9a-fA-F]{3}-?[0-9a-fA-F]{12}$")
+
 
 class SerializableBase(metaclass=ABCMeta):
     pass
