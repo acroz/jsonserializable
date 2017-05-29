@@ -1,9 +1,12 @@
 from collections import OrderedDict as _OrderedDict
 from collections.abc import Sequence as _Sequence, Mapping as _Mapping
 from abc import ABCMeta, abstractmethod
+from uuid import UUID
 
 import jsonschema
 
+UUID_PATTERN = ("^[0-9a-f]{8}-?[0-9a-f]{4}-?[1-5][0-9a-f]{3}-?"
+                "[89ab][0-9a-f]{3}-?[0-9a-f]{12}$")
 
 class SerializableBase(metaclass=ABCMeta):
     pass
@@ -17,13 +20,17 @@ SimpleType.register(int)
 SimpleType.register(float)
 SimpleType.register(bool)
 SimpleType.register(str)
+SimpleType.register(UUID)
 
 SIMPLETYPE_SCHEMAS = {
     int: {'type': 'number'},
     float: {'type': 'number'},
     bool: {'type': 'boolean'},
-    str: {'type': 'string'}
+    str: {'type': 'string'},
+    UUID: {'type': 'string', 'pattern': UUID_PATTERN}
 }
+
+SIMPLETYPE_SERIALIZERS = {UUID: str}
 
 
 class Serializable(SerializableBase):
@@ -56,7 +63,8 @@ def serialize(obj: SerializableBase):
     if isinstance(obj, Serializable):
         return obj.serialize()
     elif isinstance(obj, SimpleType):
-        return obj
+        serializer = SIMPLETYPE_SERIALIZERS.get(type(obj), lambda x: x)
+        return serializer(obj)
     else:
         raise TypeError('object is not serializable')
 
