@@ -1,8 +1,12 @@
 from collections import OrderedDict as _OrderedDict
 from collections.abc import Sequence as _Sequence, Mapping as _Mapping
 from abc import ABCMeta, abstractmethod
+from uuid import UUID
 
 import jsonschema
+
+UUID_PATTERN = ("^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[1-5][0-9a-fA-F]{3}-?"
+                "[89abAB][0-9a-fA-F]{3}-?[0-9a-fA-F]{12}$")
 
 
 class SerializableBase(metaclass=ABCMeta):
@@ -17,13 +21,17 @@ SimpleType.register(int)
 SimpleType.register(float)
 SimpleType.register(bool)
 SimpleType.register(str)
+SimpleType.register(UUID)
 
-JSON_SCHEMA_TYPES = {
-    int: 'number',
-    float: 'number',
-    bool: 'boolean',
-    str: 'string'
+SIMPLETYPE_SCHEMAS = {
+    int: {'type': 'number'},
+    float: {'type': 'number'},
+    bool: {'type': 'boolean'},
+    str: {'type': 'string'},
+    UUID: {'type': 'string', 'pattern': UUID_PATTERN}
 }
+
+SIMPLETYPE_SERIALIZERS = {UUID: str}
 
 
 class Serializable(SerializableBase):
@@ -47,7 +55,7 @@ def schema(python_type: ABCMeta):
     if issubclass(python_type, Serializable):
         return python_type.schema()  # type: ignore
     elif issubclass(python_type, SimpleType):
-        return {'type': JSON_SCHEMA_TYPES[python_type]}
+        return SIMPLETYPE_SCHEMAS[python_type]
     else:
         raise TypeError('type has no JSON schema')
 
@@ -56,7 +64,8 @@ def serialize(obj: SerializableBase):
     if isinstance(obj, Serializable):
         return obj.serialize()
     elif isinstance(obj, SimpleType):
-        return obj
+        serializer = SIMPLETYPE_SERIALIZERS.get(type(obj), lambda x: x)
+        return serializer(obj)
     else:
         raise TypeError('object is not serializable')
 
@@ -65,6 +74,7 @@ def deserialize(data, python_type: ABCMeta):
     if issubclass(python_type, Serializable):
         return python_type.deserialize(data)  # type: ignore
     elif issubclass(python_type, SimpleType):
+        jsonschema.validate(data, schema(python_type))
         return python_type(data)
     else:
         raise TypeError('cannot deserialize to this type')
