@@ -34,6 +34,10 @@ def test_deserialize_invalid_schema(data):
         Array[int].deserialize(data)
 
 
+def test_repr():
+    assert repr(Array[int]([1, 2, 3])) == 'Array[int]([1, 2, 3])'
+
+
 def test_setitem():
     array = Array[int]([1, 2, 3])
     array[1] = 10

@@ -92,6 +92,7 @@ class ContainerMeta(ABCMeta):
         pass
 
     def __getitem__(self, container_type):
+        _check_serializable_type(container_type)
         if self._container_type is not None:
             raise TypeError(
                 'container type already set as {}'.format(self._container_type)
@@ -99,7 +100,7 @@ class ContainerMeta(ABCMeta):
         try:
             cls = self._subclass_cache[container_type]
         except KeyError:
-            name = '{}[{}]'.format(self.__name__, repr(container_type))
+            name = '{}[{}]'.format(self.__name__, container_type.__name__)
             cls = self.__class__(
                 name, (self,) + self.__bases__, dict(self.__dict__),
                 container_type=container_type
@@ -118,6 +119,9 @@ class ContainerBase(Serializable, metaclass=ContainerMeta):
             )
         super().__init__(*args, **kwargs)
 
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, super().__repr__())
+
     @classmethod
     def _check_type(cls, item):
         if not isinstance(item, cls._container_type):
@@ -132,9 +136,6 @@ class Array(ContainerBase, list):
         super().__init__(*args, **kwargs)
         for item in self:
             self._check_type(item)
-
-    def __repr__(self):
-        return '{}({})'.format(repr(self.__class__), super().__repr__())
 
     def __setitem__(self, index, value):
         self._check_type(value)
@@ -172,9 +173,6 @@ class Mapping(ContainerBase, dict):
         for key, value in self.items():
             self._check_key_type(key)
             self._check_type(value)
-
-    def __repr__(self):
-        return '{}({})'.format(repr(self.__class__), super().__repr__())
 
     def __setitem__(self, key, value):
         self._check_key_type(key)
