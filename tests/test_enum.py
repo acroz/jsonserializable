@@ -1,4 +1,5 @@
 import pytest
+from pytest_mock import mocker
 from jsonschema import ValidationError
 from jsonserializable import Enum, List
 
@@ -43,6 +44,13 @@ def test_getitem():
 def test_getitem_missing():
     with pytest.raises(KeyError):
         ExampleEnum['other']
+
+
+def test_call(mocker): # noqa
+    mock_from_value = mocker.MagicMock(return_value='foobar')
+    mocker.patch.object(ExampleEnum, 'from_value', mock_from_value)
+    assert ExampleEnum('value') == mock_from_value.return_value
+    mock_from_value.assert_called_once_with('value')
 
 
 def test_fromvalue():
