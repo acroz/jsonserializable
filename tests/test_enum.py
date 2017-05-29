@@ -26,6 +26,13 @@ def test_no_overwrite():
             prop = 1  # noqa
 
 
+def test_non_unique():
+    with pytest.raises(ValueError):
+        class TestClass(Enum):
+            foo = 'string'
+            bar = 'string'
+
+
 def test_getattr():
     member = ExampleEnum.foo
     assert member.name == 'foo'
