@@ -17,6 +17,12 @@ EXAMPLE_SERIALIZATIONS = [
 ]
 
 
+def test_invalid_type():
+    with pytest.raises(TypeError):
+        class TestClass(Enum):
+            foo = b'bar'
+
+
 def test_no_overwrite():
     with pytest.raises(TypeError):
         class TestClass(Enum):

@@ -217,6 +217,8 @@ class EnumDict(dict):
                 raise TypeError(
                     '{} already defined as: {}'.format(key, self[key])
                 )
+            if not isinstance(value, SerializableBase):
+                raise TypeError('{} is not a serializable type')
             self.members[key] = value
         else:
             super().__setitem__(key, value)
