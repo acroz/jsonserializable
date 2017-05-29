@@ -92,6 +92,13 @@ def test_deserialize_invalid_schema(data):
         ExampleObject.deserialize(data)
 
 
+@pytest.mark.parametrize('value', ['foobar', None])
+def test_setattr_optional(value):
+    obj = ExampleObject(integer=1, string='foo', optional='bar')
+    obj.optional = value
+    assert obj.optional == value
+
+
 @pytest.mark.parametrize('value', [1, ['bar'], None])
 def test_setattr_invalid_type(value):
     obj = ExampleObject(integer=1, string='foo')
@@ -99,7 +106,7 @@ def test_setattr_invalid_type(value):
         obj.string = value
 
 
-@pytest.mark.parametrize('value', ['foobar', None])
-def test_setattr_optional(value):
-    obj = ExampleObject(integer=1, string='foo', optional='bar')
-    obj.optional = value
+def test_setattr_nonexistent_attribute():
+    obj = ExampleObject(integer=1, string='foo')
+    with pytest.raises(AttributeError):
+        obj.non_existent = 1
