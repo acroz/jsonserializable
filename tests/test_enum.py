@@ -16,6 +16,15 @@ EXAMPLE_SERIALIZATIONS = [
 ]
 
 
+def test_no_overwrite():
+    with pytest.raises(TypeError):
+        class TestClass(Enum):
+            @property
+            def prop(self):
+                pass
+            prop = 1  # noqa
+
+
 def test_getattr():
     member = ExampleEnum.foo
     assert member.name == 'foo'
