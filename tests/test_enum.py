@@ -63,6 +63,10 @@ def test_fromvalue_missing_unhashable():
         ExampleEnum.from_value(List[str](['foo', 'bar']))
 
 
+def test_repr_member():
+    assert repr(ExampleEnum.foo) == 'ExampleEnum.foo'
+
+
 def test_serialize_enum():
     with pytest.raises(TypeError):
         ExampleEnum.serialize(object())
