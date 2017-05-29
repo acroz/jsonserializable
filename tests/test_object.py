@@ -92,6 +92,12 @@ def test_deserialize_invalid_schema(data):
         ExampleObject.deserialize(data)
 
 
+def test_repr():
+    obj = ExampleObject(integer=1, string='foo')
+    expected = "ExampleObject(integer=1, string='foo', optional=None)"
+    assert repr(obj) == expected
+
+
 @pytest.mark.parametrize('value', ['foobar', None])
 def test_setattr_optional(value):
     obj = ExampleObject(integer=1, string='foo', optional='bar')

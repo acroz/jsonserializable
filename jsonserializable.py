@@ -206,8 +206,8 @@ class Attribute:
         self.optional = bool(optional)
 
     def __repr__(self):
-        return 'Attribute(type={}, optional={})'.format(
-            self.type, self.optional
+        return '{}(type={}, optional={})'.format(
+            self.__class__.__name__, self.type, self.optional
         )
 
 
@@ -284,8 +284,7 @@ class Object(Serializable, metaclass=ObjectMeta):
         for name in self._object_attributes:
             value = getattr(self, name)
             parts.append('{}={}'.format(name, repr(value)))
-        classname = self.__class__.__name__
-        return '{}({})'.format(classname, ', '.join(parts))
+        return '{}({})'.format(self.__class__.__name__, ', '.join(parts))
 
     def __eq__(self, other):
         if type(self) != type(other):
