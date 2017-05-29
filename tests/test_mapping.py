@@ -66,3 +66,27 @@ def test_setitem_invalid_value_type(value):
     mapping = Mapping[int]()
     with pytest.raises(TypeError):
         mapping['foo'] = value
+
+
+class IntMapping(Mapping[int]):  # type: ignore
+    pass
+
+
+@pytest.mark.parametrize('value', [Mapping[int](one=1), IntMapping(one=1)])
+def test_isinstance_true(value):
+    assert isinstance(value, Mapping)
+    assert isinstance(value, Mapping[int])
+
+
+def test_isinstance_false():
+    assert not isinstance(Mapping[int](one=1), IntMapping)
+
+
+@pytest.mark.parametrize('cls', [Mapping[int], IntMapping])
+def test_issubclass_true(cls):
+    assert issubclass(cls, Mapping)
+    assert issubclass(cls, Mapping[int])
+
+
+def test_issubclass_false():
+    assert not issubclass(Mapping[int], IntMapping)
