@@ -1,5 +1,11 @@
+from uuid import UUID, uuid4
 import pytest
-from jsonserializable import serialize, deserialize, schema, List, Dict
+from jsonserializable import (
+    serialize, deserialize, schema, List, Dict, UUID_PATTERN
+)
+
+
+EXAMPLE_UUID = uuid4()
 
 
 @pytest.mark.parametrize('value, expected', [
@@ -7,6 +13,7 @@ from jsonserializable import serialize, deserialize, schema, List, Dict
     (3.4, 3.4),
     ('foo', 'foo'),
     (True, True),
+    (EXAMPLE_UUID, str(EXAMPLE_UUID)),
     (List[int]([1, 2]), [1, 2]),
     (Dict[int](foo=1), {'foo': 1})
 ])
@@ -26,6 +33,7 @@ def test_serialize_unsupported():
     (3.4, float, 3.4),
     ('foo', str, 'foo'),
     (True, bool, True),
+    (str(EXAMPLE_UUID), UUID, EXAMPLE_UUID),
     ([1, 2], List[int], List[int]([1, 2])),
     ({'foo': 1}, Dict[int], Dict[int](foo=1))
 ])
@@ -45,6 +53,7 @@ def test_deserialize_unsupported():
     (float, {'type': 'number'}),
     (str, {'type': 'string'}),
     (bool, {'type': 'boolean'}),
+    (UUID, {'type': 'string', 'pattern': UUID_PATTERN}),
     (List[int], List[int].schema()),
     (Dict[int], Dict[int].schema())
 ])
