@@ -1,8 +1,5 @@
 from collections import OrderedDict as _OrderedDict
-from collections.abc import (
-    Sequence as _Sequence, MutableSequence as _MutableSequence,
-    Mapping as _Mapping, MutableMapping as _MutableMapping
-)
+from collections.abc import Sequence as _Sequence, Mapping as _Mapping
 from abc import ABCMeta, abstractmethod
 
 import jsonschema
@@ -73,48 +70,57 @@ def deserialize(data, python_type: ABCMeta):
         raise TypeError('cannot deserialize to this type')
 
 
+def _check_serializable_type(python_type):
+    if not isinstance(python_type, type):
+        raise TypeError('{} is not a type'.format(python_type))
+    if not issubclass(python_type, SerializableBase):
+        raise TypeError('{} is not a supported type'.format(python_type))
+
+
 class ContainerMeta(ABCMeta):
 
-    def __new__(metacls, name, bases, classdict,
-                container_type=Serializable):
-        assert isinstance(container_type, type)
-        assert issubclass(container_type, SerializableBase)
+    def __new__(metacls, name, bases, classdict, container_type=None):
+        if container_type is not None:
+            _check_serializable_type(container_type)
         cls = super().__new__(metacls, name, bases, classdict)
-        cls._container_type = container_type
+        cls._subclass_cache = {}
+        cls._container_type = (container_type or
+                               getattr(cls, '_container_type', None))
         return cls
 
     def __init__(self, *args, **kwargs):
         pass
 
     def __getitem__(self, container_type):
-        return self.__class__(self.__name__,
-                              (self,) + self.__bases__,
-                              dict(self.__dict__),
-                              container_type=container_type)
-
-    def __repr__(self):
-        return '{}[{}]'.format(
-            self.__name__, repr(self._container_type)
-        )
-
-    def __instancecheck__(self, instance):
-        if not super().__instancecheck__(instance):
-            return False
-        for item in instance:
-            if not isinstance(item, self._container_type):
-                return False
-        return True
-
-    def __subclasscheck__(self, cls):
-        if not super().__subclasscheck__(cls):
-            return False
-        if not issubclass(cls._container_type,
-                          self._container_type):
-            return False
-        return True
+        _check_serializable_type(container_type)
+        if self._container_type is not None:
+            raise TypeError(
+                'container type already set as {}'.format(self._container_type)
+            )
+        try:
+            cls = self._subclass_cache[container_type]
+        except KeyError:
+            name = '{}[{}]'.format(self.__name__, container_type.__name__)
+            cls = self.__class__(
+                name, (self,) + self.__bases__, dict(self.__dict__),
+                container_type=container_type
+            )
+            self._subclass_cache[container_type] = cls
+        return cls
 
 
 class ContainerBase(Serializable, metaclass=ContainerMeta):
+
+    def __init__(self, *args, **kwargs):
+        if self._container_type is None:
+            raise TypeError(
+                'container {} has no inner type - use square brackets to set'
+                .format(self.__class__.__name__)
+            )
+        super().__init__(*args, **kwargs)
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, super().__repr__())
 
     @classmethod
     def _check_type(cls, item):
@@ -124,29 +130,20 @@ class ContainerBase(Serializable, metaclass=ContainerMeta):
             ))
 
 
-class Array(_MutableSequence, ContainerBase):
+class Array(ContainerBase, list):
 
     def __init__(self, *args, **kwargs):
-        self._contents = list(*args, **kwargs)
-        for item in self._contents:
+        super().__init__(*args, **kwargs)
+        for item in self:
             self._check_type(item)
-
-    def __len__(self):
-        return len(self._contents)
 
     def __setitem__(self, index, value):
         self._check_type(value)
-        self._contents[index] = value
-
-    def __getitem__(self, index):
-        return self._contents[index]
-
-    def __delitem__(self, index):
-        del self._contents[index]
+        super().__setitem__(index, value)
 
     def insert(self, index, value):
         self._check_type(value)
-        self._contents.insert(index, value)
+        super().insert(index, value)
 
     @classmethod
     def schema(cls):
@@ -164,28 +161,23 @@ class Array(_MutableSequence, ContainerBase):
         return cls(deserialize(entry, cls._container_type) for entry in data)
 
 
-class Mapping(_MutableMapping, ContainerBase):
+class Mapping(ContainerBase, dict):
+
+    @staticmethod
+    def _check_key_type(key):
+        if not isinstance(key, str):
+            raise TypeError('keys must be of type str')
 
     def __init__(self, *args, **kwargs):
-        self._contents = dict(*args, **kwargs)
-        for value in self._contents.values():
+        super().__init__(*args, **kwargs)
+        for key, value in self.items():
+            self._check_key_type(key)
             self._check_type(value)
 
-    def __len__(self):
-        return len(self._contents)
-
-    def __iter__(self):
-        return iter(self._contents)
-
     def __setitem__(self, key, value):
+        self._check_key_type(key)
         self._check_type(value)
-        self._contents[key] = value
-
-    def __getitem__(self, key):
-        return self._contents[key]
-
-    def __delitem__(self, key):
-        del self._contents[key]
+        super().__setitem__(key, value)
 
     @classmethod
     def schema(cls):
@@ -209,13 +201,13 @@ class Mapping(_MutableMapping, ContainerBase):
 class Attribute:
 
     def __init__(self, type, optional=False):
-        assert issubclass(type, SerializableBase)
+        _check_serializable_type(type)
         self.type = type
-        self.optional = optional
+        self.optional = bool(optional)
 
     def __repr__(self):
-        return 'Attribute(type={}, optional={})'.format(
-            self.type, self.optional
+        return '{}(type={}, optional={})'.format(
+            self.__class__.__name__, self.type, self.optional
         )
 
 
@@ -292,8 +284,15 @@ class Object(Serializable, metaclass=ObjectMeta):
         for name in self._object_attributes:
             value = getattr(self, name)
             parts.append('{}={}'.format(name, repr(value)))
-        classname = self.__class__.__name__
-        return '{}({})'.format(classname, ', '.join(parts))
+        return '{}({})'.format(self.__class__.__name__, ', '.join(parts))
+
+    def __eq__(self, other):
+        if type(self) != type(other):
+            return False
+        for name in self._object_attributes:
+            if getattr(self, name) != getattr(other, name):
+                return False
+        return True
 
     @classmethod
     def schema(cls):
