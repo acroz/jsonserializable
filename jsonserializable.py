@@ -18,11 +18,11 @@ SimpleType.register(float)
 SimpleType.register(bool)
 SimpleType.register(str)
 
-JSON_SCHEMA_TYPES = {
-    int: 'number',
-    float: 'number',
-    bool: 'boolean',
-    str: 'string'
+SIMPLETYPE_SCHEMAS = {
+    int: {'type': 'number'},
+    float: {'type': 'number'},
+    bool: {'type': 'boolean'},
+    str: {'type': 'string'}
 }
 
 
@@ -47,7 +47,7 @@ def schema(python_type: ABCMeta):
     if issubclass(python_type, Serializable):
         return python_type.schema()  # type: ignore
     elif issubclass(python_type, SimpleType):
-        return {'type': JSON_SCHEMA_TYPES[python_type]}
+        return SIMPLETYPE_SCHEMAS[python_type]
     else:
         raise TypeError('type has no JSON schema')
 
