@@ -3,11 +3,6 @@ from jsonschema import ValidationError
 from jsonserializable import Array
 
 
-def test_invalid_container_type():
-    with pytest.raises(TypeError):
-        Array[bytes]
-
-
 @pytest.mark.parametrize('data', [[], [1, 2, 3]])
 def test_serialize(data):
     array = Array[int](data)
@@ -65,6 +60,16 @@ def test_insert_invalid_type(data):
     array = Array[int]([1, 2, 3])
     with pytest.raises(TypeError):
         array.insert(1, data)
+
+
+def test_unsupported_type_argument():
+    with pytest.raises(TypeError):
+        Array[bytes]
+
+
+def test_second_type_argument():
+    with pytest.raises(TypeError):
+        Array[int][int]
 
 
 class IntArray(Array[int]):  # type: ignore
