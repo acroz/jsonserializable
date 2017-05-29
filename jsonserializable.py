@@ -198,19 +198,6 @@ class Dict(ContainerBase, dict):
         })
 
 
-class Attribute:
-
-    def __init__(self, type, optional=False):
-        _check_serializable_type(type)
-        self.type = type
-        self.optional = bool(optional)
-
-    def __repr__(self):
-        return '{}(type={}, optional={})'.format(
-            self.__class__.__name__, self.type, self.optional
-        )
-
-
 def _is_descriptor(obj):
     """Returns True if obj is a descriptor, False otherwise."""
     return (hasattr(obj, '__get__') or
@@ -278,11 +265,15 @@ class EnumMeta(ABCMeta):
         name_map = _OrderedDict()
         value_map = _OrderedDict()
         for name, value in member_defs.items():
-            if value in value_map:
-                raise ValueError('enumeration values must be unique')
             member = EnumMember(cls, name, value)
             name_map[name] = member
-            value_map[value] = member
+            try:
+                if value in value_map:
+                    raise ValueError('enumeration values must be unique')
+                value_map[value] = member
+            except TypeError:
+                # Unhashable value, skip
+                pass
         cls._name_map = name_map
         cls._value_map = value_map
 
@@ -311,6 +302,13 @@ class EnumMeta(ABCMeta):
     def from_value(self, value):
         try:
             return self._value_map[value]
+        except TypeError:
+            # Unhashable value
+            for member in self._name_map.values():
+                if member.value == value:
+                    return member
+            else:
+                raise ValueError('no matching value')
         except KeyError:
             raise ValueError('no matching value')
 
@@ -328,6 +326,19 @@ class Enum(Serializable, metaclass=EnumMeta):
     def deserialize(cls, data):
         jsonschema.validate(data, cls.schema())
         return cls.from_value(data)
+
+
+class Attribute:
+
+    def __init__(self, type, optional=False):
+        _check_serializable_type(type)
+        self.type = type
+        self.optional = bool(optional)
+
+    def __repr__(self):
+        return '{}(type={}, optional={})'.format(
+            self.__class__.__name__, self.type, self.optional
+        )
 
 
 class ObjectDict(dict):
