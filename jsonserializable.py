@@ -74,6 +74,7 @@ def deserialize(data, python_type: ABCMeta):
     if issubclass(python_type, Serializable):
         return python_type.deserialize(data)  # type: ignore
     elif issubclass(python_type, SimpleType):
+        jsonschema.validate(data, schema(python_type))
         return python_type(data)
     else:
         raise TypeError('cannot deserialize to this type')
